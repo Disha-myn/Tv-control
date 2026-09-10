@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TV Player</title>
+    <style>
+        * { margin: 0; padding: 0; overflow: hidden; background: #000; }
+        body, html { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
+        video, iframe { width: 100vw; height: 100vh; border: none; object-fit: cover; }
+        #status { color: #888; font-family: sans-serif; font-size: 2rem; }
+    </style>
+</head>
+<body>
+    <div id="player">
+        <div id="status">Connecting to TV Channel...</div>
+    </div>
+
+    <script>
+        // Extract TV ID from URL parameter (e.g., tv.html?id=1)
+        const params = new URLSearchParams(window.location.search);
+        const tvId = params.get('id') || '1';
+        const player = document.getElementById('player');
+
+        // Create cross-tab communication channel
+        const channel = new BroadcastChannel('tv_control_channel');
+
+        function loadMedia(mediaType, src) {
+            if (!src) return;
+            
+            if (mediaType === 'youtube') {
+                // Extracts YouTube ID or uses full link
+                const ytId = src.includes('v=') ? src.split('v=')[1].split('&')[0] : src;
+                player.innerHTML = `
+                    <iframe 
+                        src="https://www.youtube.com/embed/${ytId}?autoplay=1&loop=1&playlist=${ytId}&mute=1&controls=0" 
+                        allow="autoplay; encrypted-media" allowfullscreen>
+                    </iframe>`;
+            } else {
+                // Direct MP4 link
+                player.innerHTML = `
+                    <video autoplay loop muted playsinline>
+                        <source src="${src}" type="video/mp4">
+                    </video>`;
+            }
+        }
+
+        // Check for saved URL in storage on startup
+        const initialVideo = localStorage.getItem(`tv_${tvId}_video`);
+        const initialType = localStorage.getItem(`tv_${tvId}_type`) || 'mp4';
+        if (initialVideo) {
+            loadMedia(initialType, initialVideo);
+        } else {
+            document.getElementById('status').innerText = `TV #${tvId} Ready (Waiting for command)`;
+        }
+
+        // Listen for live update commands from laptop controller
+        channel.onmessage = (event) => {
+            const { targetTv, type, url } = event.data;
+            if (targetTv === tvId || targetTv === 'ALL') {
+                localStorage.setItem(`tv_${tvId}_video`, url);
+                localStorage.setItem(`tv_${tvId}_type`, type);
+                loadMedia(type, url);
+            }
+        };
+    </script>
+</body>
+</html>
