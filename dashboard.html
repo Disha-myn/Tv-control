@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TV Master Controller (Protected)</title>
+    <title>25 TV Master Controller (Protected)</title>
     <style>
         body { font-family: system-ui, sans-serif; padding: 20px; background: #121212; color: #fff; }
         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; }
@@ -13,14 +13,14 @@
         button { background: #00d2ff; color: #000; font-weight: bold; cursor: pointer; }
         button:hover { background: #0099cc; color: #fff; }
         .global-box { background: #2a2a2a; padding: 15px; border-radius: 8px; margin-bottom: 25px; border: 1px solid #444; }
-        #app-content { display: none; } /* Hidden until passcode is authorized */
+        #app-content { display: none; }
     </style>
 </head>
 <body>
 
     <!-- SECURED APP CONTAINER -->
     <div id="app-content">
-        <h1>📺TV Global Dashboard</h1>
+        <h1>📺 25 TV Global Cloud Dashboard</h1>
 
         <div class="global-box">
             <h3>Broadcast to ALL TVs</h3>
@@ -37,18 +37,17 @@
 
     <script>
         // ==========================================
-        // 1. PASSCODE AUTHORIZATION GATE
+        // 1. DASHBOARD SECURITY PASSCODE
         // ==========================================
-        const MASTER_PIN = "6391"; // <-- CHANGE THIS TO YOUR DESIRED PASSCODE
+        const MASTER_PIN = "6391"; // Change this to your preferred PIN
 
         function authenticateUser() {
-            // Check if user is already authenticated in this session
             if (sessionStorage.getItem("dashboard_auth") === "true") {
                 document.getElementById("app-content").style.display = "block";
                 return true;
             }
 
-            const inputPin = prompt("🔒 Access Restricted. Enter Master Passcode:");
+            const inputPin = prompt("🔒 Enter Master Passcode:");
             
             if (inputPin === MASTER_PIN) {
                 sessionStorage.setItem("dashboard_auth", "true");
@@ -59,25 +58,23 @@
                 document.body.innerHTML = `
                     <div style="text-align:center; margin-top: 20vh;">
                         <h1 style="color: #ff4d4d; font-size: 3rem;">403 - Unauthorized</h1>
-                        <p style="color: #ccc;">You do not have permission to view or manage the TV Control Dashboard.</p>
                         <button onclick="location.reload()" style="width: auto; padding: 10px 20px; margin-top: 20px;">Try Again</button>
                     </div>`;
                 return false;
             }
         }
 
-        // Run authentication immediately on page load
         if (authenticateUser()) {
             
             // ==========================================
-            // 2. DASHBOARD LOGIC (RUNS AFTER LOGIN)
+            // 2. PASTE YOUR JSONBIN CREDENTIALS HERE
             // ==========================================
-            const BIN_ID = 'YOUR_BIN_ID_HERE'; 
-            const API_KEY = 'YOUR_API_KEY_HERE';
+            const BIN_ID = '6aa24839ffd5d16053f4d5c6 '; 
+            const API_KEY = '$2a$10$FLOXxg2zuz9FSbiliptPt.2WxFIkl9KI4S/mmerwO39qCwUj61Hqq';
+            // ==========================================
 
             const grid = document.getElementById('tv-grid');
 
-            // Render TV controls
             for (let i = 1; i <= 25; i++) {
                 const card = document.createElement('div');
                 card.className = 'card';
@@ -119,11 +116,10 @@
 
                     alert(`Updated TV #${tvId} successfully!`);
                 } catch (err) {
-                    alert('Error updating cloud server. Check your credentials.');
+                    alert('Error updating cloud database. Verify your Bin ID and API Key.');
                 }
             }
 
-            // Bind sendToTv function to global scope
             window.sendToTv = sendToTv;
         }
     </script>
