@@ -3,66 +3,66 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TV Player</title>
+    <title>TV Display Client</title>
     <style>
         * { margin: 0; padding: 0; overflow: hidden; background: #000; }
         body, html { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
         video, iframe { width: 100vw; height: 100vh; border: none; object-fit: cover; }
-        #status { color: #888; font-family: sans-serif; font-size: 2rem; }
+        #status { color: #888; font-family: system-ui, sans-serif; font-size: 2rem; text-align: center; }
     </style>
 </head>
 <body>
-    <div id="player">
-        <div id="status">Connecting to TV Channel...</div>
-    </div>
+    <div id="player"><div id="status">Connecting to Cloud Control...</div></div>
 
     <script>
-        // Extract TV ID from URL parameter (e.g., tv.html?id=1)
         const params = new URLSearchParams(window.location.search);
         const tvId = params.get('id') || '1';
         const player = document.getElementById('player');
 
-        // Create cross-tab communication channel
-        const channel = new BroadcastChannel('tv_control_channel');
+        // ==========================================
+        // PASTE YOUR JSONBIN CREDENTIALS HERE
+        // ==========================================
+        const BIN_ID = '6aa24839ffd5d16053f4d5c6 '; 
+        const API_KEY = '$2a$10$FLOXxg2zuz9FSbiliptPt.2WxFIkl9KI4S/mmerwO39qCwUj61Hqq';
+        // ==========================================
 
-        function loadMedia(mediaType, src) {
-            if (!src) return;
-            
-            if (mediaType === 'youtube') {
-                // Extracts YouTube ID or uses full link
+        let currentUrl = '';
+
+        function loadMedia(type, src) {
+            if (src === currentUrl) return; // Prevent reloading same video
+            currentUrl = src;
+
+            if (type === 'youtube') {
                 const ytId = src.includes('v=') ? src.split('v=')[1].split('&')[0] : src;
-                player.innerHTML = `
-                    <iframe 
-                        src="https://www.youtube.com/embed/${ytId}?autoplay=1&loop=1&playlist=${ytId}&mute=1&controls=0" 
-                        allow="autoplay; encrypted-media" allowfullscreen>
-                    </iframe>`;
+                player.innerHTML = `<iframe src="https://www.youtube.com/embed/${ytId}?autoplay=1&loop=1&playlist=${ytId}&mute=1&controls=0" allow="autoplay; encrypted-media" allowfullscreen></iframe>`;
             } else {
-                // Direct MP4 link
-                player.innerHTML = `
-                    <video autoplay loop muted playsinline>
-                        <source src="${src}" type="video/mp4">
-                    </video>`;
+                player.innerHTML = `<video autoplay loop muted playsinline><source src="${src}" type="video/mp4"></video>`;
             }
         }
 
-        // Check for saved URL in storage on startup
-        const initialVideo = localStorage.getItem(`tv_${tvId}_video`);
-        const initialType = localStorage.getItem(`tv_${tvId}_type`) || 'mp4';
-        if (initialVideo) {
-            loadMedia(initialType, initialVideo);
-        } else {
-            document.getElementById('status').innerText = `TV #${tvId} Ready (Waiting for command)`;
+        async function checkCloudUpdates() {
+            try {
+                const res = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
+                    headers: { 'X-Master-Key': API_KEY }
+                });
+                const data = await res.json();
+                const config = data.record;
+
+                if (config[`tv_${tvId}`]) {
+                    const { type, url } = config[`tv_${tvId}`];
+                    loadMedia(type, url);
+                } else if (config['tv_ALL']) {
+                    const { type, url } = config['tv_ALL'];
+                    loadMedia(type, url);
+                }
+            } catch (err) {
+                console.error("Cloud Connection Error:", err);
+            }
         }
 
-        // Listen for live update commands from laptop controller
-        channel.onmessage = (event) => {
-            const { targetTv, type, url } = event.data;
-            if (targetTv === tvId || targetTv === 'ALL') {
-                localStorage.setItem(`tv_${tvId}_video`, url);
-                localStorage.setItem(`tv_${tvId}_type`, type);
-                loadMedia(type, url);
-            }
-        };
+        // Check for updates every 5 seconds
+        setInterval(checkCloudUpdates, 5000);
+        checkCloudUpdates();
     </script>
 </body>
 </html>
